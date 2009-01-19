@@ -6,7 +6,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.3
-Release:        11%{?dist}
+Release:        12%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -89,6 +89,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Jan 19 2009 Richard W.M. Jones <rjones@redhat.com> - 1.2.3-12
+- Force rebuild to test maintenance account.
+
 * Thu Dec 18 2008 Richard W.M. Jones <rjones@redhat.com> - 1.2.3-11
 - Pass correct CFLAGS to build.
 
