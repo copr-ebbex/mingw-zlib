@@ -6,7 +6,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.3
-Release:        12%{?dist}
+Release:        13%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -24,7 +24,7 @@ BuildArch:      noarch
 # MinGW-specific patches.
 Patch100:       zlib-win32.patch
 
-BuildRequires:  mingw32-filesystem >= 23
+BuildRequires:  mingw32-filesystem >= 49
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-binutils
 
@@ -89,6 +89,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Feb 20 2009 Richard W.M. Jones <rjones@redhat.com> - 1.2.3-13
+- Rebuild for mingw32-gcc 4.4
+
 * Mon Jan 19 2009 Richard W.M. Jones <rjones@redhat.com> - 1.2.3-12
 - Force rebuild to test maintenance account.
 
