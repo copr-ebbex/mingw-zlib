@@ -6,7 +6,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.3
-Release:        13%{?dist}
+Release:        14%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -89,6 +89,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Feb 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.3-14
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
+
 * Fri Feb 20 2009 Richard W.M. Jones <rjones@redhat.com> - 1.2.3-13
 - Rebuild for mingw32-gcc 4.4
 
