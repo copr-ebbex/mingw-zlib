@@ -6,7 +6,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.3
-Release:        14%{?dist}
+Release:        15%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -31,6 +31,14 @@ BuildRequires:  mingw32-binutils
 
 %description
 MinGW Windows zlib compression library.
+
+%package static
+Summary: Static libraries for mingw32-zlib development.
+Group:          Development/Libraries
+Requires: mingw32-zlib = %{version}-%{release}
+
+%description static
+The mingw32-zlib-static package contains static library for mingw32-zlib development.
 
 
 %prep
@@ -72,8 +80,8 @@ make -f win32/Makefile.gcc \
 mv $RPM_BUILD_ROOT%{_mingw32_libdir}/libzdll.a \
    $RPM_BUILD_ROOT%{_mingw32_libdir}/libz.dll.a
 
-# Remove static library.
-rm $RPM_BUILD_ROOT%{_mingw32_libdir}/libz.a
+# Do NOT remove static library.
+# rm $RPM_BUILD_ROOT%{_mingw32_libdir}/libz.a
 
 
 %clean
@@ -88,7 +96,15 @@ rm -rf $RPM_BUILD_ROOT
 %{_mingw32_bindir}/zlib1.dll
 
 
+%files static
+%defattr(-,root,root)
+%{_mingw32_libdir}/libz.a
+
+
 %changelog
+* Mon Mar  3 2009 W. Pilorz <wpilorz at gmail.com> - 1.2.3-15
+- Add static subpackage.
+
 * Wed Feb 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.3-14
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_11_Mass_Rebuild
 
