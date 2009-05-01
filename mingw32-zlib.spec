@@ -6,7 +6,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.3
-Release:        16%{?dist}
+Release:        17%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -25,6 +25,9 @@ BuildRequires:  mingw32-filesystem >= 49
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-binutils
 BuildRequires:  perl
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  libtool
 
 
 %description
@@ -129,6 +132,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu May  1 2009 Thomas Sailer <t.sailer@alumni.ethz.ch> - 1.2.3-17
+- BR autoconf, automake, libtool
+
 * Thu Apr 30 2009 Thomas Sailer <t.sailer@alumni.ethz.ch> - 1.2.3-16
 - use autotools build system from native package
 
