@@ -6,7 +6,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.3
-Release:        17%{?dist}
+Release:        18%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -51,9 +51,12 @@ MinGW Minizip manipulates files from a .zip archive.
 
 
 %prep
-%setup -q -n zlib-1.2.3
+%setup -q -n zlib-%{version}
 %patch100 -p1
-cp -r . x || :
+cd ..
+cp -a zlib-%{version} x
+mv x zlib-%{version}
+cd zlib-%{version}
 %patch3 -p1 -b .atools
 # patch cannot create an empty dir
 mkdir m4
@@ -132,6 +135,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jun 12 2009 Richard W.M. Jones <rjones@redhat.com> - 1.2.3-18
+- Cannot copy current directory into itself, so fix the copy command
+  which creates 'x' subdirectory.
+
 * Thu May  1 2009 Thomas Sailer <t.sailer@alumni.ethz.ch> - 1.2.3-17
 - BR autoconf, automake, libtool
 
