@@ -6,7 +6,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.3
-Release:        18%{?dist}
+Release:        19%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -135,6 +135,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sat Jul 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.3-19
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
+
 * Fri Jun 12 2009 Richard W.M. Jones <rjones@redhat.com> - 1.2.3-18
 - Cannot copy current directory into itself, so fix the copy command
   which creates 'x' subdirectory.
