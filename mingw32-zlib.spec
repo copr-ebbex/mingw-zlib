@@ -1,25 +1,25 @@
-%define __strip %{_mingw32_strip}
-%define __objdump %{_mingw32_objdump}
-%define _use_internal_dependency_generator 0
-%define __find_requires %{_mingw32_findrequires}
-%define __find_provides %{_mingw32_findprovides}
+%global __strip %{_mingw32_strip}
+%global __objdump %{_mingw32_objdump}
+%global _use_internal_dependency_generator 0
+%global __find_requires %{_mingw32_findrequires}
+%global __find_provides %{_mingw32_findprovides}
+%define __debug_install_post %{_mingw32_debug_install_post}
 
 Name:           mingw32-zlib
-Version:        1.2.3
-Release:        19%{?dist}
+Version:        1.2.5
+Release:        1%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
 Group:          Development/Libraries
 URL:            http://www.zlib.net/
 Source0:        http://www.zlib.net/zlib-%{version}.tar.gz
-Patch3:         zlib-1.2.3-autotools.patch
-Patch6:         minizip-1.2.3-malloc.patch
+# Replace the zlib build system with an autotools based one
+Patch3:         mingw32-zlib-1.2.5-autotools.patch
+# https://bugzilla.redhat.com/show_bug.cgi?id=591317
+Patch4:         zlib-1.2.5-gentoo.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
-
-# MinGW-specific patches.
-Patch100:       zlib-win32.patch
 
 BuildRequires:  mingw32-filesystem >= 49
 BuildRequires:  mingw32-gcc
@@ -34,36 +34,38 @@ BuildRequires:  libtool
 MinGW Windows zlib compression library.
 
 %package static
-Summary: Static libraries for mingw32-zlib development.
+Summary:        Static libraries for mingw32-zlib development.
 Group:          Development/Libraries
-Requires: mingw32-zlib = %{version}-%{release}
+Requires:       mingw32-zlib = %{version}-%{release}
 
 %description static
 The mingw32-zlib-static package contains static library for mingw32-zlib development.
 
 %package -n mingw32-minizip
-Summary: Minizip manipulates files from a .zip archive
+Summary:        Minizip manipulates files from a .zip archive
 Group:          Development/Libraries
-Requires: mingw32-zlib = %{version}-%{release}
+Requires:       mingw32-zlib = %{version}-%{release}
 
 %description -n  mingw32-minizip
 MinGW Minizip manipulates files from a .zip archive.
 
 
+%{?_mingw32_debug_package}
+
+
 %prep
 %setup -q -n zlib-%{version}
-%patch100 -p1
 cd ..
 cp -a zlib-%{version} x
 mv x zlib-%{version}
 cd zlib-%{version}
 %patch3 -p1 -b .atools
+%patch4 -p1 -b .g
 # patch cannot create an empty dir
 mkdir m4
-%patch6 -p1 -b .mal
+#cp minigzip.c contrib/minizip
 iconv -f windows-1252 -t utf-8 <ChangeLog >ChangeLog.tmp
-mv ChangeLog.tmp ChangeLog
-cp Makefile Makefile.old
+#mv ChangeLog.tmp ChangeLog
 
 %build
 pushd x
@@ -71,6 +73,7 @@ CC=%{_mingw32_cc} \
 CFLAGS="%{_mingw32_cflags}" \
 RANLIB=%{_mingw32_ranlib} \
 ./configure
+#LDSHAREDLIBC="" \
 
 make -f win32/Makefile.gcc \
   CFLAGS="%{_mingw32_cflags}" \
@@ -110,7 +113,7 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %files
-%defattr(-,root,root)
+%defattr(-,root,root,-)
 %{_mingw32_includedir}/zconf.h
 %{_mingw32_includedir}/zlib.h
 %{_mingw32_libdir}/libz.dll.a
@@ -119,13 +122,12 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %files static
-%defattr(-,root,root)
+%defattr(-,root,root,-)
 %{_mingw32_libdir}/libz.a
 
 
 %files -n mingw32-minizip
 %defattr(-,root,root,-)
-%doc contrib/minizip/ChangeLogUnzip
 %{_mingw32_libdir}/libminizip.dll.a
 %{_mingw32_libdir}/libminizip.la
 %{_mingw32_bindir}/libminizip-1.dll
@@ -135,6 +137,13 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Sun Sep 12 2010 Erik van Pienbroek <epienbro@fedoraproject.org> - 1.2.5-1
+- Update to 1.2.5
+- Use %%global instead of %%define
+- Automatically generate debuginfo subpackage
+- Use correct %%defattr tag
+- Merged the changes from the native Fedora package
+
 * Sat Jul 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.3-19
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_12_Mass_Rebuild
 
