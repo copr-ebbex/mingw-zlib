@@ -63,9 +63,7 @@ cd zlib-%{version}
 %patch4 -p1 -b .g
 # patch cannot create an empty dir
 mkdir m4
-#cp minigzip.c contrib/minizip
 iconv -f windows-1252 -t utf-8 <ChangeLog >ChangeLog.tmp
-#mv ChangeLog.tmp ChangeLog
 
 %build
 pushd x
@@ -73,7 +71,6 @@ CC=%{_mingw32_cc} \
 CFLAGS="%{_mingw32_cflags}" \
 RANLIB=%{_mingw32_ranlib} \
 ./configure
-#LDSHAREDLIBC="" \
 
 make -f win32/Makefile.gcc \
   CFLAGS="%{_mingw32_cflags}" \
