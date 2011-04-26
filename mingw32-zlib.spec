@@ -7,7 +7,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.5
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -94,6 +94,15 @@ cp x/libzdll.a .libs/libz.dll.a
 cp x/zlib1.dll .libs/
 make %{?_smp_mflags}
 
+sed \
+  -e 's|@prefix@|%{_mingw32_prefix}|g' \
+  -e 's|@exec_prefix@|${prefix}|g' \
+  -e 's|@libdir@|%{_mingw32_libdir}|g' \
+  -e 's|@sharedlibdir@|${libdir}|g' \
+  -e 's|@includedir@|%{_mingw32_includedir}|g' \
+  -e 's|@VERSION@|%{version}|g' \
+  zlib.pc.in > zlib.pc
+
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -104,6 +113,7 @@ rm -rf $RPM_BUILD_ROOT/%{_mingw32_mandir}
 
 rm -f $RPM_BUILD_ROOT/%{_mingw32_bindir}/libz-1.dll
 install x/zlib1.dll $RPM_BUILD_ROOT/%{_mingw32_bindir}/
+install -m 644 zlib.pc $RPM_BUILD_ROOT%{_mingw32_libdir}/pkgconfig/
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -116,6 +126,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mingw32_libdir}/libz.dll.a
 %{_mingw32_bindir}/zlib1.dll
 %{_mingw32_libdir}/libz.la
+%{_mingw32_libdir}/pkgconfig/zlib.pc
 
 
 %files static
@@ -134,6 +145,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Tue Apr 26 2011 Kalev Lember <kalev@smartlink.ee> - 1.2.5-3
+- Install zlib pkgconfig file
+
 * Tue Feb 08 2011 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.5-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_15_Mass_Rebuild
 
