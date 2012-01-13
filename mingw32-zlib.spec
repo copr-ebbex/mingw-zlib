@@ -7,7 +7,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.5
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -136,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.5-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
+
 * Tue May 10 2011 Kalev Lember <kalev@smartlink.ee> - 1.2.5-4
 - Use the built .pc file instead of manually generating it
 
