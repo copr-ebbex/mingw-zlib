@@ -7,7 +7,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.5
-Release:        5%{?dist}
+Release:        6%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -85,7 +85,7 @@ popd
 autoreconf --install;
 %{_mingw32_configure}
 make %{?_smp_mflags} libz.la
-perl -i -pe 's,libz-1.dll,zlib1.dll,' libz.la
+perl -i -pe 's,libz-1.dll,zlib1.dll,' .libs/libz.lai
 rm -f libz.dll.a
 cp x/libzdll.a libz.dll.a
 cp x/zlib1.dll .
@@ -136,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Fri Feb 17 2012 David Tardon <dtardon@redhat.com> - 1.2.5-6
+- fix dlname in libz.la
+
 * Fri Jan 13 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.5-5
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_17_Mass_Rebuild
 
