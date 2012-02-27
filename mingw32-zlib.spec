@@ -1,13 +1,10 @@
 %global __strip %{_mingw32_strip}
 %global __objdump %{_mingw32_objdump}
-%global _use_internal_dependency_generator 0
-%global __find_requires %{_mingw32_findrequires}
-%global __find_provides %{_mingw32_findprovides}
 %define __debug_install_post %{_mingw32_debug_install_post}
 
 Name:           mingw32-zlib
 Version:        1.2.5
-Release:        7%{?dist}
+Release:        8%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -21,10 +18,9 @@ Patch4:         zlib-1.2.5-gentoo.patch
 # The .def file contains an empty LIBRARY line which isn't valid
 Patch5:         zlib-1.2.5-use-correct-def-file.patch
 
-BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
-BuildRequires:  mingw32-filesystem >= 49
+BuildRequires:  mingw32-filesystem
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-binutils
 BuildRequires:  perl
@@ -100,39 +96,30 @@ make %{?_smp_mflags}
 
 
 %install
-rm -rf $RPM_BUILD_ROOT
-
 make install DESTDIR=$RPM_BUILD_ROOT
 
 rm -rf $RPM_BUILD_ROOT/%{_mingw32_mandir}
 
 rm -f $RPM_BUILD_ROOT/%{_mingw32_bindir}/libz-1.dll
+rm -f $RPM_BUILD_ROOT%{_mingw32_libdir}/*.la
 install x/zlib1.dll $RPM_BUILD_ROOT/%{_mingw32_bindir}/
 install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{_mingw32_libdir}/pkgconfig/
 
-%clean
-rm -rf $RPM_BUILD_ROOT
-
 
 %files
-%defattr(-,root,root,-)
 %{_mingw32_includedir}/zconf.h
 %{_mingw32_includedir}/zlib.h
 %{_mingw32_libdir}/libz.dll.a
 %{_mingw32_bindir}/zlib1.dll
-%{_mingw32_libdir}/libz.la
 %{_mingw32_libdir}/pkgconfig/zlib.pc
 
 
 %files static
-%defattr(-,root,root,-)
 %{_mingw32_libdir}/libz.a
 
 
 %files -n mingw32-minizip
-%defattr(-,root,root,-)
 %{_mingw32_libdir}/libminizip.dll.a
-%{_mingw32_libdir}/libminizip.la
 %{_mingw32_bindir}/libminizip-1.dll
 %dir %{_mingw32_includedir}/minizip
 %{_mingw32_includedir}/minizip/*.h
@@ -140,6 +127,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Feb 27 2012 Kalev Lember <kalevlember@gmail.com> - 1.2.5-8
+- Remove the .la files
+- Spec clean up
+
 * Mon Feb 27 2012 Erik van Pienbroek <epienbro@fedoraproject.org> - 1.2.5-7
 - Rebuild against the mingw-w64 toolchain
 - Use the correct RPM macros
