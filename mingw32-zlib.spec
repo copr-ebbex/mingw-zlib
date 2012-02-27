@@ -18,6 +18,9 @@ Source0:        http://www.zlib.net/zlib-%{version}.tar.gz
 Patch3:         mingw32-zlib-1.2.5-autotools.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=591317
 Patch4:         zlib-1.2.5-gentoo.patch
+# The .def file contains an empty LIBRARY line which isn't valid
+Patch5:         zlib-1.2.5-use-correct-def-file.patch
+
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:      noarch
 
@@ -55,6 +58,7 @@ MinGW Minizip manipulates files from a .zip archive.
 
 %prep
 %setup -q -n zlib-%{version}
+%patch5 -p1 -b .def
 cd ..
 cp -a zlib-%{version} x
 mv x zlib-%{version}
@@ -76,8 +80,8 @@ make -f win32/Makefile.gcc \
   CFLAGS="%{_mingw32_cflags}" \
   CC=%{_mingw32_cc} \
   AR=%{_mingw32_ar} \
-  RC=i686-pc-mingw32-windres \
-  DLLWRAP=i686-pc-mingw32-dllwrap \
+  RC=%{_mingw32_windres} \
+  DLLWRAP=%{_mingw32_dllwrap} \
   STRIP=%{_mingw32_strip} \
   all
 popd
@@ -138,6 +142,8 @@ rm -rf $RPM_BUILD_ROOT
 %changelog
 * Mon Feb 27 2012 Erik van Pienbroek <epienbro@fedoraproject.org> - 1.2.5-7
 - Rebuild against the mingw-w64 toolchain
+- Use the correct RPM macros
+- Fix FTBFS against the latest binutils caused by the use of an invalid .def file
 
 * Fri Feb 17 2012 David Tardon <dtardon@redhat.com> - 1.2.5-6
 - fix dlname in libz.la

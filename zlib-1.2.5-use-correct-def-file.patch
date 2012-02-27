@@ -1,0 +1,8 @@
+--- zlib-1.2.5/win32/zlib.def.orig      2012-02-26 16:19:28.608868501 +0100
++++ zlib-1.2.5/win32/zlib.def   2012-02-26 16:19:34.156864592 +0100
+@@ -1,4 +1,4 @@
+-LIBRARY
++LIBRARY zlib1.dll
+ ; zlib data compression library
+
+ EXPORTS
