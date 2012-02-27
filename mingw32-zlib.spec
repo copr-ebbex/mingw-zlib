@@ -7,7 +7,7 @@
 
 Name:           mingw32-zlib
 Version:        1.2.5
-Release:        6%{?dist}
+Release:        7%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -136,6 +136,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Feb 27 2012 Erik van Pienbroek <epienbro@fedoraproject.org> - 1.2.5-7
+- Rebuild against the mingw-w64 toolchain
+
 * Fri Feb 17 2012 David Tardon <dtardon@redhat.com> - 1.2.5-6
 - fix dlname in libz.la
 
