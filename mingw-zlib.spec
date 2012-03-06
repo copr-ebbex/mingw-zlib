@@ -1,6 +1,6 @@
-%global __strip %{_mingw32_strip}
-%global __objdump %{_mingw32_objdump}
-%define __debug_install_post %{_mingw32_debug_install_post}
+%global __strip %{mingw32_strip}
+%global __objdump %{mingw32_objdump}
+%define __debug_install_post %{mingw32_debug_install_post}
 
 Name:           mingw-zlib
 Version:        1.2.5
@@ -58,7 +58,7 @@ Requires:       mingw32-zlib = %{version}-%{release}
 MinGW Minizip manipulates files from a .zip archive.
 
 
-%{?_mingw32_debug_package}
+%{?mingw32_debug_package}
 
 
 %prep
@@ -76,23 +76,23 @@ iconv -f windows-1252 -t utf-8 <ChangeLog >ChangeLog.tmp
 
 %build
 pushd x
-CC=%{_mingw32_cc} \
-CFLAGS="%{_mingw32_cflags}" \
-RANLIB=%{_mingw32_ranlib} \
-./configure --prefix=%{_mingw32_prefix}
+CC=%{mingw32_cc} \
+CFLAGS="%{mingw32_cflags}" \
+RANLIB=%{mingw32_ranlib} \
+./configure --prefix=%{mingw32_prefix}
 
 make -f win32/Makefile.gcc \
-  CFLAGS="%{_mingw32_cflags}" \
-  CC=%{_mingw32_cc} \
-  AR=%{_mingw32_ar} \
-  RC=%{_mingw32_windres} \
-  DLLWRAP=%{_mingw32_dllwrap} \
-  STRIP=%{_mingw32_strip} \
+  CFLAGS="%{mingw32_cflags}" \
+  CC=%{mingw32_cc} \
+  AR=%{mingw32_ar} \
+  RC=%{mingw32_windres} \
+  DLLWRAP=%{mingw32_dllwrap} \
+  STRIP=%{mingw32_strip} \
   all
 popd
 
 autoreconf --install;
-%{_mingw32_configure}
+%{mingw32_configure}
 make %{?_smp_mflags} libz.la
 perl -i -pe 's,libz-1.dll,zlib1.dll,' .libs/libz.lai
 rm -f libz.dll.a
@@ -107,37 +107,38 @@ make %{?_smp_mflags}
 %install
 make install DESTDIR=$RPM_BUILD_ROOT
 
-rm -rf $RPM_BUILD_ROOT/%{_mingw32_mandir}
+rm -rf $RPM_BUILD_ROOT/%{mingw32_mandir}
 
-rm -f $RPM_BUILD_ROOT/%{_mingw32_bindir}/libz-1.dll
-rm -f $RPM_BUILD_ROOT%{_mingw32_libdir}/*.la
-install x/zlib1.dll $RPM_BUILD_ROOT/%{_mingw32_bindir}/
-install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{_mingw32_libdir}/pkgconfig/
+rm -f $RPM_BUILD_ROOT/%{mingw32_bindir}/libz-1.dll
+rm -f $RPM_BUILD_ROOT%{mingw32_libdir}/*.la
+install x/zlib1.dll $RPM_BUILD_ROOT/%{mingw32_bindir}/
+install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{mingw32_libdir}/pkgconfig/
 
 
 %files -n mingw32-zlib
-%{_mingw32_includedir}/zconf.h
-%{_mingw32_includedir}/zlib.h
-%{_mingw32_libdir}/libz.dll.a
-%{_mingw32_bindir}/zlib1.dll
-%{_mingw32_libdir}/pkgconfig/zlib.pc
+%{mingw32_includedir}/zconf.h
+%{mingw32_includedir}/zlib.h
+%{mingw32_libdir}/libz.dll.a
+%{mingw32_bindir}/zlib1.dll
+%{mingw32_libdir}/pkgconfig/zlib.pc
 
 
 %files -n mingw32-zlib-static
-%{_mingw32_libdir}/libz.a
+%{mingw32_libdir}/libz.a
 
 
 %files -n mingw32-minizip
-%{_mingw32_libdir}/libminizip.dll.a
-%{_mingw32_bindir}/libminizip-1.dll
-%dir %{_mingw32_includedir}/minizip
-%{_mingw32_includedir}/minizip/*.h
-%{_mingw32_libdir}/pkgconfig/minizip.pc
+%{mingw32_libdir}/libminizip.dll.a
+%{mingw32_bindir}/libminizip-1.dll
+%dir %{mingw32_includedir}/minizip
+%{mingw32_includedir}/minizip/*.h
+%{mingw32_libdir}/pkgconfig/minizip.pc
 
 
 %changelog
 * Tue Mar 06 2012 Kalev Lember <kalevlember@gmail.com> - 1.2.5-9
 - Renamed the source package to mingw-zlib (#800415)
+- Use mingw macros without leading underscore
 
 * Mon Feb 27 2012 Kalev Lember <kalevlember@gmail.com> - 1.2.5-8
 - Remove the .la files
