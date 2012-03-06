@@ -2,9 +2,9 @@
 %global __objdump %{_mingw32_objdump}
 %define __debug_install_post %{_mingw32_debug_install_post}
 
-Name:           mingw32-zlib
+Name:           mingw-zlib
 Version:        1.2.5
-Release:        8%{?dist}
+Release:        9%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -32,13 +32,22 @@ BuildRequires:  libtool
 %description
 MinGW Windows zlib compression library.
 
-%package static
+
+%package -n mingw32-zlib
+Summary:        MinGW Windows zlib compression library
+
+%description -n mingw32-zlib
+MinGW Windows zlib compression library.
+
+
+%package -n mingw32-zlib-static
 Summary:        Static libraries for mingw32-zlib development.
 Group:          Development/Libraries
 Requires:       mingw32-zlib = %{version}-%{release}
 
-%description static
+%description -n mingw32-zlib-static
 The mingw32-zlib-static package contains static library for mingw32-zlib development.
+
 
 %package -n mingw32-minizip
 Summary:        Minizip manipulates files from a .zip archive
@@ -106,7 +115,7 @@ install x/zlib1.dll $RPM_BUILD_ROOT/%{_mingw32_bindir}/
 install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{_mingw32_libdir}/pkgconfig/
 
 
-%files
+%files -n mingw32-zlib
 %{_mingw32_includedir}/zconf.h
 %{_mingw32_includedir}/zlib.h
 %{_mingw32_libdir}/libz.dll.a
@@ -114,7 +123,7 @@ install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{_mingw32_libdir}/pkgconfig/
 %{_mingw32_libdir}/pkgconfig/zlib.pc
 
 
-%files static
+%files -n mingw32-zlib-static
 %{_mingw32_libdir}/libz.a
 
 
@@ -127,6 +136,9 @@ install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{_mingw32_libdir}/pkgconfig/
 
 
 %changelog
+* Tue Mar 06 2012 Kalev Lember <kalevlember@gmail.com> - 1.2.5-9
+- Renamed the source package to mingw-zlib (#800415)
+
 * Mon Feb 27 2012 Kalev Lember <kalevlember@gmail.com> - 1.2.5-8
 - Remove the .la files
 - Spec clean up
