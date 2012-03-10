@@ -1,10 +1,11 @@
-%global __strip %{mingw32_strip}
-%global __objdump %{mingw32_objdump}
-%define __debug_install_post %{mingw32_debug_install_post}
+%?mingw_package_header
+
+%global mingw_build_win32 1
+%global mingw_build_win64 1
 
 Name:           mingw-zlib
 Version:        1.2.5
-Release:        9%{?dist}
+Release:        10%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -17,12 +18,20 @@ Patch3:         mingw32-zlib-1.2.5-autotools.patch
 Patch4:         zlib-1.2.5-gentoo.patch
 # The .def file contains an empty LIBRARY line which isn't valid
 Patch5:         zlib-1.2.5-use-correct-def-file.patch
+# Libtool tries to make a libz-1.dll while we expect zlib1.dll
+# Force this by hacking the ltmain.sh
+Patch6:         mingw32-zlib-create-zlib1-dll.patch
 
 BuildArch:      noarch
 
-BuildRequires:  mingw32-filesystem
+BuildRequires:  mingw32-filesystem >= 95
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-binutils
+
+BuildRequires:  mingw64-filesystem >= 95
+BuildRequires:  mingw64-gcc
+BuildRequires:  mingw64-binutils
+
 BuildRequires:  perl
 BuildRequires:  autoconf
 BuildRequires:  automake
@@ -33,11 +42,12 @@ BuildRequires:  libtool
 MinGW Windows zlib compression library.
 
 
+# Win32
 %package -n mingw32-zlib
-Summary:        MinGW Windows zlib compression library
+Summary:        MinGW Windows zlib compression library for the win32 target
 
 %description -n mingw32-zlib
-MinGW Windows zlib compression library.
+MinGW Windows zlib compression library for the win32 target.
 
 
 %package -n mingw32-zlib-static
@@ -57,64 +67,78 @@ Requires:       mingw32-zlib = %{version}-%{release}
 %description -n  mingw32-minizip
 MinGW Minizip manipulates files from a .zip archive.
 
+# Win64
+%package -n mingw64-zlib
+Summary:        MinGW Windows zlib compression library for the win64 target
 
-%{?mingw32_debug_package}
+%description -n mingw64-zlib
+MinGW Windows zlib compression library for the win64 target.
+
+%package -n mingw64-zlib-static
+Summary:        Static libraries for mingw64-zlib development
+Requires:       mingw64-zlib = %{version}-%{release}
+
+%description -n mingw64-zlib-static
+The mingw64-zlib-static package contains static library for mingw64-zlib development.
+
+%package -n mingw64-minizip
+Summary:        Minizip manipulates files from a .zip archive
+Requires:       mingw64-zlib = %{version}-%{release}
+
+%description -n mingw64-minizip
+MinGW Minizip manipulates files from a .zip archive.
+
+
+%?mingw_debug_package
 
 
 %prep
 %setup -q -n zlib-%{version}
-%patch5 -p1 -b .def
-cd ..
-cp -a zlib-%{version} x
-mv x zlib-%{version}
-cd zlib-%{version}
 %patch3 -p1 -b .atools
 %patch4 -p1 -b .g
+%patch5 -p1 -b .def
 # patch cannot create an empty dir
 mkdir m4
 iconv -f windows-1252 -t utf-8 <ChangeLog >ChangeLog.tmp
 
+autoreconf --install --force
+
+%patch6 -p0 -b .libtool
+
+
 %build
-pushd x
-CC=%{mingw32_cc} \
-CFLAGS="%{mingw32_cflags}" \
-RANLIB=%{mingw32_ranlib} \
-./configure --prefix=%{mingw32_prefix}
-
-make -f win32/Makefile.gcc \
-  CFLAGS="%{mingw32_cflags}" \
-  CC=%{mingw32_cc} \
-  AR=%{mingw32_ar} \
-  RC=%{mingw32_windres} \
-  DLLWRAP=%{mingw32_dllwrap} \
-  STRIP=%{mingw32_strip} \
-  all
-popd
-
-autoreconf --install;
-%{mingw32_configure}
-make %{?_smp_mflags} libz.la
-perl -i -pe 's,libz-1.dll,zlib1.dll,' .libs/libz.lai
-rm -f libz.dll.a
-cp x/libzdll.a libz.dll.a
-cp x/zlib1.dll .
-rm -f .libs/libz.dll.a
-cp x/libzdll.a .libs/libz.dll.a
-cp x/zlib1.dll .libs/
-make %{?_smp_mflags}
+%mingw_configure
+%mingw_make %{?_smp_mflags}
 
 
 %install
-make install DESTDIR=$RPM_BUILD_ROOT
+# Libtool tries to install a file called libz-1.dll
+# but this isn't created anymore due to patch #6
+# Fool libtool until a proper fix has been found
+touch build_win32/.libs/libz-1.dll build_win64/.libs/libz-1.dll
+%mingw_make_install DESTDIR=$RPM_BUILD_ROOT
 
-rm -rf $RPM_BUILD_ROOT/%{mingw32_mandir}
+# Manually install the correct zlib.dll
+install -m 0644 build_win32/.libs/zlib1.dll $RPM_BUILD_ROOT%{mingw32_bindir}/
+install -m 0644 build_win64/.libs/zlib1.dll $RPM_BUILD_ROOT%{mingw64_bindir}/
 
-rm -f $RPM_BUILD_ROOT/%{mingw32_bindir}/libz-1.dll
-rm -f $RPM_BUILD_ROOT%{mingw32_libdir}/*.la
-install x/zlib1.dll $RPM_BUILD_ROOT/%{mingw32_bindir}/
-install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{mingw32_libdir}/pkgconfig/
+# Install the pkgconfig file
+install -m 0644 build_win32/zlib.pc $RPM_BUILD_ROOT%{mingw32_libdir}/pkgconfig/
+install -m 0644 build_win64/zlib.pc $RPM_BUILD_ROOT%{mingw64_libdir}/pkgconfig/
+
+# Drop the fake libz-1.dll
+rm -f $RPM_BUILD_ROOT%{mingw32_bindir}/libz-1.dll
+rm -f $RPM_BUILD_ROOT%{mingw64_bindir}/libz-1.dll
+
+# Drop all .la files
+find $RPM_BUILD_ROOT -name "*.la" -delete
+
+# Drop the man pages
+rm -rf $RPM_BUILD_ROOT%{mingw32_mandir}
+rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 
 
+# Win32
 %files -n mingw32-zlib
 %{mingw32_includedir}/zconf.h
 %{mingw32_includedir}/zlib.h
@@ -122,10 +146,8 @@ install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{mingw32_libdir}/pkgconfig/
 %{mingw32_bindir}/zlib1.dll
 %{mingw32_libdir}/pkgconfig/zlib.pc
 
-
 %files -n mingw32-zlib-static
 %{mingw32_libdir}/libz.a
-
 
 %files -n mingw32-minizip
 %{mingw32_libdir}/libminizip.dll.a
@@ -134,8 +156,31 @@ install -m 644 x/zlib.pc $RPM_BUILD_ROOT%{mingw32_libdir}/pkgconfig/
 %{mingw32_includedir}/minizip/*.h
 %{mingw32_libdir}/pkgconfig/minizip.pc
 
+# Win64
+%files -n mingw64-zlib
+%{mingw64_includedir}/zconf.h
+%{mingw64_includedir}/zlib.h
+%{mingw64_libdir}/libz.dll.a
+%{mingw64_bindir}/zlib1.dll
+%{mingw64_libdir}/pkgconfig/zlib.pc
+
+%files -n mingw64-zlib-static
+%{mingw64_libdir}/libz.a
+
+%files -n mingw64-minizip
+%{mingw64_libdir}/libminizip.dll.a
+%{mingw64_bindir}/libminizip-1.dll
+%dir %{mingw64_includedir}/minizip
+%{mingw64_includedir}/minizip/*.h
+%{mingw64_libdir}/pkgconfig/minizip.pc
+
 
 %changelog
+* Sat Mar 10 2012 Erik van Pienbroek <epienbro@fedoraproject.org> - 1.2.5-10
+- Added win64 support
+- Simplified the build process by using autotools and a hacked version of libtool
+- Made the package compliant with the new MinGW packaging guidelines
+
 * Tue Mar 06 2012 Kalev Lember <kalevlember@gmail.com> - 1.2.5-9
 - Renamed the source package to mingw-zlib (#800415)
 - Use mingw macros without leading underscore

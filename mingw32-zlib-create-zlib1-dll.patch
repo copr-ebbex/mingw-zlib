@@ -1,0 +1,10 @@
+--- ltmain.sh.orig	2010-10-13 23:11:05.164935359 +0200
++++ ltmain.sh	2010-10-13 23:33:31.572557755 +0200
+@@ -7431,6 +7431,7 @@
+ 	    eval test_cmds=\"$archive_expsym_cmds\"
+ 	    cmds=$archive_expsym_cmds
+ 	  else
++	    if test "$soname" = "libz-1.dll" ; then soname=zlib1.dll; fi
+ 	    eval test_cmds=\"$archive_cmds\"
+ 	    cmds=$archive_cmds
+ 	  fi
