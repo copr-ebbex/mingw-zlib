@@ -5,7 +5,7 @@
 
 Name:           mingw-zlib
 Version:        1.2.5
-Release:        10%{?dist}
+Release:        11%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -176,6 +176,9 @@ rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 
 
 %changelog
+* Fri Jul 20 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.5-11
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
+
 * Sat Mar 10 2012 Erik van Pienbroek <epienbro@fedoraproject.org> - 1.2.5-10
 - Added win64 support
 - Simplified the build process by using autotools and a hacked version of libtool
