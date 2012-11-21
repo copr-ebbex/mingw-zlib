@@ -1,11 +1,8 @@
 %?mingw_package_header
 
-%global mingw_build_win32 1
-%global mingw_build_win64 1
-
 Name:           mingw-zlib
-Version:        1.2.5
-Release:        11%{?dist}
+Version:        1.2.7
+Release:        1%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -13,11 +10,9 @@ Group:          Development/Libraries
 URL:            http://www.zlib.net/
 Source0:        http://www.zlib.net/zlib-%{version}.tar.gz
 # Replace the zlib build system with an autotools based one
-Patch3:         mingw32-zlib-1.2.5-autotools.patch
-# https://bugzilla.redhat.com/show_bug.cgi?id=591317
-Patch4:         zlib-1.2.5-gentoo.patch
+Patch3:         mingw32-zlib-1.2.7-autotools.patch
 # The .def file contains an empty LIBRARY line which isn't valid
-Patch5:         zlib-1.2.5-use-correct-def-file.patch
+Patch5:         zlib-1.2.7-use-correct-def-file.patch
 # Libtool tries to make a libz-1.dll while we expect zlib1.dll
 # Force this by hacking the ltmain.sh
 Patch6:         mingw32-zlib-create-zlib1-dll.patch
@@ -95,7 +90,6 @@ MinGW Minizip manipulates files from a .zip archive.
 %prep
 %setup -q -n zlib-%{version}
 %patch3 -p1 -b .atools
-%patch4 -p1 -b .g
 %patch5 -p1 -b .def
 # patch cannot create an empty dir
 mkdir m4
@@ -176,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 
 
 %changelog
+* Thu Nov 22 2012 Erik van Pienbroek <epienbro@fedoraproject.org> - 1.2.7-1
+- Update to 1.2.7
+
 * Fri Jul 20 2012 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.5-11
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_18_Mass_Rebuild
 

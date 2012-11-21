@@ -80,7 +80,7 @@ diff -urN zlib-1.2.3.orig/configure.ac zlib-1.2.3.kasal/configure.ac
 +# Process this file with autoconf to produce a configure script.
 +
 +AC_INIT([zlib], [1.2.5], [bugzilla.redhat.com])
-+AC_CONFIG_SRCDIR([minigzip.c])
++AC_CONFIG_SRCDIR([gzlib.c])
 +AC_CONFIG_MACRO_DIR([m4])
 +AM_INIT_AUTOMAKE([foreign])
 +LT_INIT
