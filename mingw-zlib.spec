@@ -229,13 +229,13 @@ rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 - Cannot copy current directory into itself, so fix the copy command
   which creates 'x' subdirectory.
 
-* Thu May  1 2009 Thomas Sailer <t.sailer@alumni.ethz.ch> - 1.2.3-17
+* Fri May  1 2009 Thomas Sailer <t.sailer@alumni.ethz.ch> - 1.2.3-17
 - BR autoconf, automake, libtool
 
 * Thu Apr 30 2009 Thomas Sailer <t.sailer@alumni.ethz.ch> - 1.2.3-16
 - use autotools build system from native package
 
-* Mon Mar  3 2009 W. Pilorz <wpilorz at gmail.com> - 1.2.3-15
+* Tue Mar  3 2009 W. Pilorz <wpilorz at gmail.com> - 1.2.3-15
 - Add static subpackage.
 
 * Wed Feb 25 2009 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.3-14
