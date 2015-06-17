@@ -2,7 +2,7 @@
 
 Name:           mingw-zlib
 Version:        1.2.8
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -170,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 
 
 %changelog
+* Wed Jun 17 2015 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.8-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_23_Mass_Rebuild
+
 * Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.2.8-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
 
