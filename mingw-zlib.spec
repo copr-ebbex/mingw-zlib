@@ -27,7 +27,7 @@ BuildRequires:  mingw64-filesystem >= 95
 BuildRequires:  mingw64-gcc
 BuildRequires:  mingw64-binutils
 
-BuildRequires:  perl
+BuildRequires:  perl-interpreter
 BuildRequires:  autoconf
 BuildRequires:  automake
 BuildRequires:  libtool
