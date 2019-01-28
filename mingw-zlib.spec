@@ -6,7 +6,6 @@ Release:        9%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
-Group:          Development/Libraries
 URL:            http://www.zlib.net/
 Source0:        http://www.zlib.net/zlib-%{version}.tar.gz
 # Replace the zlib build system with an autotools based one
@@ -47,7 +46,6 @@ MinGW Windows zlib compression library for the win32 target.
 
 %package -n mingw32-zlib-static
 Summary:        Static libraries for mingw32-zlib development.
-Group:          Development/Libraries
 Requires:       mingw32-zlib = %{version}-%{release}
 
 %description -n mingw32-zlib-static
@@ -56,7 +54,6 @@ The mingw32-zlib-static package contains static library for mingw32-zlib develop
 
 %package -n mingw32-minizip
 Summary:        Minizip manipulates files from a .zip archive
-Group:          Development/Libraries
 Requires:       mingw32-zlib = %{version}-%{release}
 
 %description -n  mingw32-minizip
