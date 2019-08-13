@@ -1,13 +1,15 @@
 %?mingw_package_header
 
 Name:           mingw-zlib
-Version:        1.2.8
-Release:        12%{?dist}
+Version:        1.2.11
+Release:        1%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
 URL:            http://www.zlib.net/
-Source0:        http://www.zlib.net/zlib-%{version}.tar.gz
+Source0:        http://www.zlib.net/zlib-%{version}.tar.xz
+# https://github.com/madler/zlib/pull/210
+Patch0:         zlib-1.2.5-minizip-fixuncrypt.patch
 # Replace the zlib build system with an autotools based one
 Patch3:         mingw32-zlib-1.2.7-autotools.patch
 # The .def file contains an empty LIBRARY line which isn't valid
@@ -86,6 +88,7 @@ MinGW Minizip manipulates files from a .zip archive.
 
 %prep
 %setup -q -n zlib-%{version}
+%patch0 -p1 -b .fixuncrypt
 %patch3 -p1 -b .atools
 %patch5 -p1 -b .def
 # patch cannot create an empty dir
@@ -167,6 +170,9 @@ rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 
 
 %changelog
+* Tue Aug 13 2019 Marc-André Lureau <marcandre.lureau@redhat.com> - 1.2.11-1
+- Update to 1.2.11
+
 * Tue Aug 06 2019 Thomas Sailer <t.sailer@alumni.ethz.ch> - 1.2.8-12
 - update pkgconf file version to 1.2.8
 
