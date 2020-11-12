@@ -1,15 +1,13 @@
-%?mingw_package_header
+%{?mingw_package_header}
 
 Name:           mingw-zlib
 Version:        1.2.11
-Release:        3%{?dist}
+Release:        4%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
 URL:            http://www.zlib.net/
 Source0:        http://www.zlib.net/zlib-%{version}.tar.xz
-# https://github.com/madler/zlib/pull/210
-Patch0:         zlib-1.2.5-minizip-fixuncrypt.patch
 # Replace the zlib build system with an autotools based one
 Patch3:         mingw32-zlib-1.2.7-autotools.patch
 # The .def file contains an empty LIBRARY line which isn't valid
@@ -54,13 +52,6 @@ Requires:       mingw32-zlib = %{version}-%{release}
 The mingw32-zlib-static package contains static library for mingw32-zlib development.
 
 
-%package -n mingw32-minizip
-Summary:        Minizip manipulates files from a .zip archive
-Requires:       mingw32-zlib = %{version}-%{release}
-
-%description -n  mingw32-minizip
-MinGW Minizip manipulates files from a .zip archive.
-
 # Win64
 %package -n mingw64-zlib
 Summary:        MinGW Windows zlib compression library for the win64 target
@@ -75,20 +66,12 @@ Requires:       mingw64-zlib = %{version}-%{release}
 %description -n mingw64-zlib-static
 The mingw64-zlib-static package contains static library for mingw64-zlib development.
 
-%package -n mingw64-minizip
-Summary:        Minizip manipulates files from a .zip archive
-Requires:       mingw64-zlib = %{version}-%{release}
 
-%description -n mingw64-minizip
-MinGW Minizip manipulates files from a .zip archive.
-
-
-%?mingw_debug_package
+%{?mingw_debug_package}
 
 
 %prep
 %setup -q -n zlib-%{version}
-%patch0 -p1 -b .fixuncrypt
 %patch3 -p1 -b .atools
 %patch5 -p1 -b .def
 # patch cannot create an empty dir
@@ -102,7 +85,7 @@ autoreconf --install --force
 
 %build
 %mingw_configure
-%mingw_make %{?_smp_mflags}
+%mingw_make_build
 
 
 %install
@@ -110,26 +93,26 @@ autoreconf --install --force
 # but this isn't created anymore due to patch #6
 # Fool libtool until a proper fix has been found
 touch build_win32/.libs/libz-1.dll build_win64/.libs/libz-1.dll
-%mingw_make_install DESTDIR=$RPM_BUILD_ROOT
+%mingw_make_install
 
 # Manually install the correct zlib.dll
-install -m 0644 build_win32/.libs/zlib1.dll $RPM_BUILD_ROOT%{mingw32_bindir}/
-install -m 0644 build_win64/.libs/zlib1.dll $RPM_BUILD_ROOT%{mingw64_bindir}/
+install -m 0644 build_win32/.libs/zlib1.dll %{buildroot}%{mingw32_bindir}/
+install -m 0644 build_win64/.libs/zlib1.dll %{buildroot}%{mingw64_bindir}/
 
 # Install the pkgconfig file
-install -m 0644 build_win32/zlib.pc $RPM_BUILD_ROOT%{mingw32_libdir}/pkgconfig/
-install -m 0644 build_win64/zlib.pc $RPM_BUILD_ROOT%{mingw64_libdir}/pkgconfig/
+install -Dm 0644 build_win32/zlib.pc %{buildroot}%{mingw32_libdir}/pkgconfig/zlib.pc
+install -Dm 0644 build_win64/zlib.pc %{buildroot}%{mingw64_libdir}/pkgconfig/zlib.pc
 
 # Drop the fake libz-1.dll
-rm -f $RPM_BUILD_ROOT%{mingw32_bindir}/libz-1.dll
-rm -f $RPM_BUILD_ROOT%{mingw64_bindir}/libz-1.dll
+rm -f %{buildroot}%{mingw32_bindir}/libz-1.dll
+rm -f %{buildroot}%{mingw64_bindir}/libz-1.dll
 
 # Drop all .la files
-find $RPM_BUILD_ROOT -name "*.la" -delete
+find %{buildroot} -name "*.la" -delete
 
 # Drop the man pages
-rm -rf $RPM_BUILD_ROOT%{mingw32_mandir}
-rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
+rm -rf %{buildroot}%{mingw32_mandir}
+rm -rf %{buildroot}%{mingw64_mandir}
 
 
 # Win32
@@ -143,13 +126,6 @@ rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 %files -n mingw32-zlib-static
 %{mingw32_libdir}/libz.a
 
-%files -n mingw32-minizip
-%{mingw32_libdir}/libminizip.dll.a
-%{mingw32_bindir}/libminizip-1.dll
-%dir %{mingw32_includedir}/minizip
-%{mingw32_includedir}/minizip/*.h
-%{mingw32_libdir}/pkgconfig/minizip.pc
-
 # Win64
 %files -n mingw64-zlib
 %{mingw64_includedir}/zconf.h
@@ -161,15 +137,11 @@ rm -rf $RPM_BUILD_ROOT%{mingw64_mandir}
 %files -n mingw64-zlib-static
 %{mingw64_libdir}/libz.a
 
-%files -n mingw64-minizip
-%{mingw64_libdir}/libminizip.dll.a
-%{mingw64_bindir}/libminizip-1.dll
-%dir %{mingw64_includedir}/minizip
-%{mingw64_includedir}/minizip/*.h
-%{mingw64_libdir}/pkgconfig/minizip.pc
-
 
 %changelog
+* Thu Nov 12 2020 Sandro Mani <manisandro@gmail.com> - 1.2.11-4
+- Drop minizip subpackages, it's a separate package now
+
 * Tue Jul 28 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1.2.11-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_33_Mass_Rebuild
 
