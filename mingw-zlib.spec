@@ -18,6 +18,7 @@ Patch6:         mingw32-zlib-create-zlib1-dll.patch
 
 BuildArch:      noarch
 
+BuildRequires: make
 BuildRequires:  mingw32-filesystem >= 95
 BuildRequires:  mingw32-gcc
 BuildRequires:  mingw32-binutils
