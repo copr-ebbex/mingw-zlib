@@ -2,7 +2,7 @@
 
 Name:           mingw-zlib
 Version:        1.2.11
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
@@ -140,6 +140,9 @@ rm -rf %{buildroot}%{mingw64_mandir}
 
 
 %changelog
+* Tue Jan 26 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1.2.11-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
+
 * Thu Nov 12 2020 Sandro Mani <manisandro@gmail.com> - 1.2.11-4
 - Drop minizip subpackages, it's a separate package now
 
