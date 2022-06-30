@@ -1,36 +1,26 @@
 %{?mingw_package_header}
 
 Name:           mingw-zlib
-Version:        1.2.11
-Release:        8%{?dist}
+Version:        1.2.12
+Release:        1%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        zlib
 URL:            http://www.zlib.net/
 Source0:        http://www.zlib.net/zlib-%{version}.tar.xz
-# Replace the zlib build system with an autotools based one
-Patch3:         mingw32-zlib-1.2.7-autotools.patch
-# The .def file contains an empty LIBRARY line which isn't valid
-Patch5:         zlib-1.2.7-use-correct-def-file.patch
-# Libtool tries to make a libz-1.dll while we expect zlib1.dll
-# Force this by hacking the ltmain.sh
-Patch6:         mingw32-zlib-create-zlib1-dll.patch
+# Use UNIX naming convention for libraries
+Patch0:         mingw-zlib-cmake.patch
 
 BuildArch:      noarch
 
-BuildRequires: make
+BuildRequires:  cmake
+BuildRequires:  make
+
 BuildRequires:  mingw32-filesystem >= 95
 BuildRequires:  mingw32-gcc
-BuildRequires:  mingw32-binutils
 
 BuildRequires:  mingw64-filesystem >= 95
 BuildRequires:  mingw64-gcc
-BuildRequires:  mingw64-binutils
-
-BuildRequires:  perl-interpreter
-BuildRequires:  autoconf
-BuildRequires:  automake
-BuildRequires:  libtool
 
 
 %description
@@ -72,44 +62,19 @@ The mingw64-zlib-static package contains static library for mingw64-zlib develop
 
 
 %prep
-%setup -q -n zlib-%{version}
-%patch3 -p1 -b .atools
-%patch5 -p1 -b .def
-# patch cannot create an empty dir
-mkdir m4
-iconv -f windows-1252 -t utf-8 <ChangeLog >ChangeLog.tmp
-
-autoreconf --install --force
-
-%patch6 -p0 -b .libtool
+%autosetup -p1 -n zlib-%{version}
 
 
 %build
-%mingw_configure
+MINGW32_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw32_libdir}/pkgconfig \
+MINGW64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw64_libdir}/pkgconfig \
+%mingw_cmake
+%mingw_make_build
 %mingw_make_build
 
 
 %install
-# Libtool tries to install a file called libz-1.dll
-# but this isn't created anymore due to patch #6
-# Fool libtool until a proper fix has been found
-touch build_win32/.libs/libz-1.dll build_win64/.libs/libz-1.dll
 %mingw_make_install
-
-# Manually install the correct zlib.dll
-install -m 0644 build_win32/.libs/zlib1.dll %{buildroot}%{mingw32_bindir}/
-install -m 0644 build_win64/.libs/zlib1.dll %{buildroot}%{mingw64_bindir}/
-
-# Install the pkgconfig file
-install -Dm 0644 build_win32/zlib.pc %{buildroot}%{mingw32_libdir}/pkgconfig/zlib.pc
-install -Dm 0644 build_win64/zlib.pc %{buildroot}%{mingw64_libdir}/pkgconfig/zlib.pc
-
-# Drop the fake libz-1.dll
-rm -f %{buildroot}%{mingw32_bindir}/libz-1.dll
-rm -f %{buildroot}%{mingw64_bindir}/libz-1.dll
-
-# Drop all .la files
-find %{buildroot} -name "*.la" -delete
 
 # Drop the man pages
 rm -rf %{buildroot}%{mingw32_mandir}
@@ -140,6 +105,9 @@ rm -rf %{buildroot}%{mingw64_mandir}
 
 
 %changelog
+* Thu Jun 30 2022 Sandro Mani <manisandro@gmail.com> - 1.2.12-1
+- Update to 1.2.12
+
 * Fri Mar 25 2022 Sandro Mani <manisandro@gmail.com> - 1.2.11-8
 - Rebuild with mingw-gcc-12
 
