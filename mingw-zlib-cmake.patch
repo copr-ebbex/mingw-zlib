@@ -1,7 +1,7 @@
-diff -rupN --no-dereference zlib-1.2.12/CMakeLists.txt zlib-1.2.12-new/CMakeLists.txt
---- zlib-1.2.12/CMakeLists.txt	2022-03-28 01:39:42.000000000 +0200
-+++ zlib-1.2.12-new/CMakeLists.txt	2022-06-30 09:45:57.294026936 +0200
-@@ -199,12 +199,16 @@ if(NOT CYGWIN)
+diff -rupN --no-dereference zlib-1.2.13/CMakeLists.txt zlib-1.2.13-new/CMakeLists.txt
+--- zlib-1.2.13/CMakeLists.txt	2022-10-13 07:06:55.000000000 +0200
++++ zlib-1.2.13-new/CMakeLists.txt	2022-12-13 09:35:24.752040574 +0100
+@@ -163,12 +163,16 @@ if(NOT CYGWIN)
      set_target_properties(zlib PROPERTIES VERSION ${ZLIB_FULL_VERSION})
  endif()
  
