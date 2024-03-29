@@ -1,8 +1,9 @@
+%global mingw_build_ucrt64 1
 %{?mingw_package_header}
 
 Name:           mingw-zlib
 Version:        1.3.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        Zlib
@@ -21,6 +22,9 @@ BuildRequires:  mingw32-gcc
 
 BuildRequires:  mingw64-filesystem >= 95
 BuildRequires:  mingw64-gcc
+
+BuildRequires:  ucrt64-filesystem >= 95
+BuildRequires:  ucrt64-gcc
 
 
 %description
@@ -58,6 +62,21 @@ Requires:       mingw64-zlib = %{version}-%{release}
 The mingw64-zlib-static package contains static library for mingw64-zlib development.
 
 
+# UCRT64
+%package -n ucrt64-zlib
+Summary:        MinGW Windows zlib compression library for the ucrt64 target
+
+%description -n ucrt64-zlib
+MinGW Windows zlib compression library for the ucrt64 target.
+
+%package -n ucrt64-zlib-static
+Summary:        Static libraries for ucrt64-zlib development
+Requires:       ucrt64-zlib = %{version}-%{release}
+
+%description -n ucrt64-zlib-static
+The ucrt64-zlib-static package contains static library for ucrt64-zlib development.
+
+
 %{?mingw_debug_package}
 
 
@@ -68,6 +87,7 @@ The mingw64-zlib-static package contains static library for mingw64-zlib develop
 %build
 MINGW32_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw32_libdir}/pkgconfig \
 MINGW64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw64_libdir}/pkgconfig \
+UCRT64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{ucrt64_libdir}/pkgconfig \
 %mingw_cmake
 %mingw_make_build
 %mingw_make_build
@@ -79,6 +99,7 @@ MINGW64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw64_libdir}/pkgconfig \
 # Drop the man pages
 rm -rf %{buildroot}%{mingw32_mandir}
 rm -rf %{buildroot}%{mingw64_mandir}
+rm -rf %{buildroot}%{ucrt64_mandir}
 
 
 # Win32
@@ -103,8 +124,22 @@ rm -rf %{buildroot}%{mingw64_mandir}
 %files -n mingw64-zlib-static
 %{mingw64_libdir}/libz.a
 
+# UCRT64
+%files -n ucrt64-zlib
+%{ucrt64_includedir}/zconf.h
+%{ucrt64_includedir}/zlib.h
+%{ucrt64_libdir}/libz.dll.a
+%{ucrt64_bindir}/zlib1.dll
+%{ucrt64_libdir}/pkgconfig/zlib.pc
+
+%files -n ucrt64-zlib-static
+%{ucrt64_libdir}/libz.a
+
 
 %changelog
+* Fri Mar 29 2024 Jonathan Schleifer <js@nil.im> - 1.3.1-2
+- Build UCRT64 package
+
 * Wed Jan 31 2024 Sandro Mani <manisandro@gmail.com> - 1.3.1-1
 - Update to 1.3.1
 
