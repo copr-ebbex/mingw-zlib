@@ -1,9 +1,10 @@
 %global mingw_build_ucrt64 1
+%global mingw_build_ucrtarm64 1
 %{?mingw_package_header}
 
 Name:           mingw-zlib
 Version:        1.3.2
-Release:        2%{?dist}
+Release:        2.1%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        Zlib
@@ -25,6 +26,19 @@ BuildRequires:  mingw64-gcc
 
 BuildRequires:  ucrt64-filesystem
 BuildRequires:  ucrt64-gcc
+
+# No gcc for this target: the toolchain is clang, lld and the llvm-* tools.
+# Headers and CRT must be named; the other targets get them through gcc.
+BuildRequires:  ucrtarm64-filesystem >= 152
+BuildRequires:  ucrtarm64-clang
+BuildRequires:  ucrtarm64-llvm-tools
+BuildRequires:  ucrtarm64-headers
+BuildRequires:  ucrtarm64-crt
+# The drivers always link -rtlib=compiler-rt (__chkstk lives there) and
+# -unwindlib=libunwind; libunwind only arrives through ucrtarm64-clang's
+# Recommends chain, and mock installs no weak dependencies.
+BuildRequires:  ucrtarm64-compiler-rt >= 22.1.8
+BuildRequires:  ucrtarm64-libunwind >= 22.1.8
 
 
 %description
@@ -77,6 +91,21 @@ Requires:       ucrt64-zlib = %{version}-%{release}
 The ucrt64-zlib-static package contains static library for ucrt64-zlib development.
 
 
+# Windows on ARM64
+%package -n ucrtarm64-zlib
+Summary:        MinGW Windows zlib compression library for the Windows on ARM64 target
+
+%description -n ucrtarm64-zlib
+MinGW Windows zlib compression library for the Windows on ARM64 target.
+
+%package -n ucrtarm64-zlib-static
+Summary:        Static libraries for ucrtarm64-zlib development
+Requires:       ucrtarm64-zlib = %{version}-%{release}
+
+%description -n ucrtarm64-zlib-static
+The ucrtarm64-zlib-static package contains static library for ucrtarm64-zlib development.
+
+
 %{?mingw_debug_package}
 
 
@@ -85,9 +114,13 @@ The ucrt64-zlib-static package contains static library for ucrt64-zlib developme
 
 
 %build
+# ZLIB_BUILD_TESTING=OFF for ucrtarm64 only: the tests build with -coverage,
+# which links libclang_rt.profile.a, and only the builtins are packaged for
+# this target.  %%check links a real zlib consumer instead.
 MINGW32_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw32_libdir}/pkgconfig \
 MINGW64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw64_libdir}/pkgconfig \
 UCRT64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{ucrt64_libdir}/pkgconfig \
+UCRTARM64_CMAKE_ARGS="-DINSTALL_PKGCONFIG_DIR=%{ucrtarm64_libdir}/pkgconfig -DZLIB_BUILD_TESTING=OFF" \
 %mingw_cmake
 %mingw_make_build
 
@@ -99,9 +132,132 @@ UCRT64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{ucrt64_libdir}/pkgconfig \
 rm -rf %{buildroot}%{mingw32_mandir}
 rm -rf %{buildroot}%{mingw64_mandir}
 rm -rf %{buildroot}%{ucrt64_mandir}
+rm -rf %{buildroot}%{ucrtarm64_mandir}
 rm -rf %{buildroot}%{mingw32_docdir}
 rm -rf %{buildroot}%{mingw64_docdir}
 rm -rf %{buildroot}%{ucrt64_docdir}
+rm -rf %{buildroot}%{ucrtarm64_docdir}
+
+
+%check
+# Verify the ucrtarm64 output with the llvm-* tools only: GNU nm/ar/objdump
+# silently mis-read AArch64 PE/COFF.  %%check runs after the BRP passes, on
+# exactly the bytes that end up in the rpms.
+
+# 1. zlib1.dll really is a Windows ARM64 PE.
+%{ucrtarm64_objdump} -f %{buildroot}%{ucrtarm64_bindir}/zlib1.dll
+%{ucrtarm64_objdump} -f %{buildroot}%{ucrtarm64_bindir}/zlib1.dll \
+    | grep -q 'file format coff-arm64'
+
+# 1b. The DLL is stripped, with its debuginfo split out; if
+#     %%mingw_debug_package went missing it would ship unstripped, silently.
+%{ucrtarm64_objdump} -h %{buildroot}%{ucrtarm64_bindir}/zlib1.dll \
+    | grep -q '\.gnu_debuglink'
+test -f %{buildroot}%{_prefix}/lib/debug%{ucrtarm64_bindir}/zlib1.dll.debug
+
+# 2. Every shipped archive still carries its ar symbol index.
+for a in %{buildroot}%{ucrtarm64_libdir}/libz.a \
+         %{buildroot}%{ucrtarm64_libdir}/libz.dll.a ; do
+    magic=$(od -A n -t x1 -N 10 "$a" | tr -d ' \n')
+    echo "archive $a: header $magic"
+    test "$magic" = "213c617263683e0a2f20"
+    %{ucrtarm64_nm} --print-armap "$a" \
+        | awk '$1 == "inflate" && $2 == "in" { found = 1 } END { exit !found }'
+done
+
+# 3. The members of both archives are ARM64 COFF as well, and nothing else
+#    leaked in from the host or from one of the other three targets.
+for a in %{buildroot}%{ucrtarm64_libdir}/libz.a \
+         %{buildroot}%{ucrtarm64_libdir}/libz.dll.a ; do
+    %{ucrtarm64_objdump} -f "$a" | grep -q 'file format coff-arm64'
+    ! %{ucrtarm64_objdump} -f "$a" | grep -E 'file format (coff-i386|coff-x86-64|elf)'
+done
+
+# 4. Link test: a zlib consumer has to compile and link against exactly what is
+#    about to be packaged, both against the import library and statically.  Only
+#    the link and the resulting file format can be checked here.
+armcheck=%{_builddir}/ucrtarm64-zlib-check
+rm -rf $armcheck
+mkdir -p $armcheck
+cat > $armcheck/t.c <<'EOF'
+#include <stdio.h>
+#include <string.h>
+#include <zlib.h>
+
+int main (void)
+{
+  static const char msg[] = "the quick brown fox jumps over the lazy dog";
+  unsigned char comp[256];
+  unsigned char plain[256];
+  z_stream s;
+  uLong clen;
+
+  memset (&s, 0, sizeof s);
+  if (deflateInit (&s, Z_DEFAULT_COMPRESSION) != Z_OK)
+    return 1;
+  s.next_in = (Bytef *) msg;
+  s.avail_in = sizeof msg;
+  s.next_out = comp;
+  s.avail_out = sizeof comp;
+  if (deflate (&s, Z_FINISH) != Z_STREAM_END)
+    return 1;
+  clen = s.total_out;
+  deflateEnd (&s);
+
+  memset (&s, 0, sizeof s);
+  if (inflateInit (&s) != Z_OK)
+    return 1;
+  s.next_in = comp;
+  s.avail_in = clen;
+  s.next_out = plain;
+  s.avail_out = sizeof plain;
+  if (inflate (&s, Z_FINISH) != Z_STREAM_END)
+    return 1;
+  inflateEnd (&s);
+
+  printf ("zlib %%s: %%s\n", zlibVersion (), (const char *) plain);
+  return memcmp (msg, plain, sizeof msg) == 0 ? 0 : 1;
+}
+EOF
+
+# Shared: -lz resolves to libz.dll.a -> zlib1.dll.
+%{ucrtarm64_cc} -isystem %{buildroot}%{ucrtarm64_includedir} $armcheck/t.c \
+    -L%{buildroot}%{ucrtarm64_libdir} -lz -o $armcheck/t.exe
+%{ucrtarm64_objdump} -f $armcheck/t.exe
+%{ucrtarm64_objdump} -f $armcheck/t.exe | grep -q 'file format coff-arm64'
+%{ucrtarm64_objdump} -p $armcheck/t.exe | grep -i 'zlib1.dll'
+
+# Static: the same program against ucrtarm64-zlib-static, which must not end
+# up importing the DLL.  Capture the imports first: under "!" a crashed
+# objdump would count as "pattern absent" and pass.
+%{ucrtarm64_cc} -isystem %{buildroot}%{ucrtarm64_includedir} $armcheck/t.c \
+    -L%{buildroot}%{ucrtarm64_libdir} -Wl,-Bstatic -lz -Wl,-Bdynamic \
+    -o $armcheck/t-static.exe
+%{ucrtarm64_objdump} -f $armcheck/t-static.exe
+%{ucrtarm64_objdump} -f $armcheck/t-static.exe | grep -q 'file format coff-arm64'
+imports=$(%{ucrtarm64_objdump} -p $armcheck/t-static.exe)
+if echo "$imports" | grep -qi 'zlib1.dll'; then
+    echo "ERROR: the static link imports zlib1.dll" >&2
+    exit 1
+fi
+
+rm -rf "$armcheck"
+
+# 5. The pkg-config file is what every later consumer finds this library
+#    with.  The file is still under %%{buildroot}, so point PKG_CONFIG_LIBDIR
+#    at that copy.
+cat %{buildroot}%{ucrtarm64_libdir}/pkgconfig/zlib.pc
+grep -q '^prefix=%{ucrtarm64_prefix}$' %{buildroot}%{ucrtarm64_libdir}/pkgconfig/zlib.pc
+export PKG_CONFIG_LIBDIR=%{buildroot}%{ucrtarm64_libdir}/pkgconfig
+ucrtarm64-pkg-config --exists zlib
+# One invocation per mode: pkgconf answers --modversion and nothing else when it
+# is asked for, so a combined "--modversion --cflags --libs" would print the
+# version and silently test neither of the other two.
+ucrtarm64-pkg-config --modversion zlib
+ucrtarm64-pkg-config --cflags zlib
+ucrtarm64-pkg-config --libs zlib
+ucrtarm64-pkg-config --libs zlib | grep -q -- '-lz'
+unset PKG_CONFIG_LIBDIR
 
 
 # Win32
@@ -140,8 +296,23 @@ rm -rf %{buildroot}%{ucrt64_docdir}
 %files -n ucrt64-zlib-static
 %{ucrt64_libdir}/libz.a
 
+# Windows on ARM64
+%files -n ucrtarm64-zlib
+%{ucrtarm64_includedir}/zconf.h
+%{ucrtarm64_includedir}/zlib.h
+%{ucrtarm64_libdir}/libz.dll.a
+%{ucrtarm64_bindir}/zlib1.dll
+%{ucrtarm64_libdir}/pkgconfig/zlib.pc
+%{ucrtarm64_libdir}/cmake/zlib/
+
+%files -n ucrtarm64-zlib-static
+%{ucrtarm64_libdir}/libz.a
+
 
 %changelog
+* Thu Aug 06 2026 Erik Berg <fedora@slipsprogrammor.no> - 1.3.2-2.1
+- Add zlib for the Windows on ARM64 target
+
 * Thu Jul 16 2026 Fedora Release Engineering <releng@fedoraproject.org> - 1.3.2-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_45_Mass_Rebuild
 
