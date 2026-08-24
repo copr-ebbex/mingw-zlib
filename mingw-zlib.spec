@@ -1,10 +1,15 @@
 %global mingw_build_ucrt64 1
 %global mingw_build_ucrtarm64 1
+# win32/win64 build with the clang supplement drivers: the qemu-ga MSI ships
+# DLLs from clang/compiler-rt toolchain sysroots, where the GNU runtime DLLs
+# do not exist, so nothing shipped there may import them.
+%global mingw_toolchain_win32 clang
+%global mingw_toolchain_win64 clang
 %{?mingw_package_header}
 
 Name:           mingw-zlib
 Version:        1.3.2
-Release:        1.1%{?dist}
+Release:        1.2%{?dist}
 Summary:        MinGW Windows zlib compression library
 
 License:        Zlib
@@ -18,11 +23,29 @@ BuildArch:      noarch
 BuildRequires:  cmake
 BuildRequires:  make
 
-BuildRequires:  mingw32-filesystem
-BuildRequires:  mingw32-gcc
+# The win32/win64 clang columns dispatch to the supplement drivers only from
+# 152-1.9 on.  Headers, CRT and binutils must be named; the GCC targets get
+# them through gcc.  compiler-rt and libunwind: the drivers always link
+# -rtlib=compiler-rt -unwindlib=libunwind, and mock installs no weak
+# dependencies.
+BuildRequires:  mingw32-filesystem >= 152-1.9
+BuildRequires:  mingw32-clang
+BuildRequires:  mingw32-binutils
+BuildRequires:  mingw32-headers
+BuildRequires:  mingw32-crt
+BuildRequires:  mingw32-compiler-rt >= 22.1.8
+BuildRequires:  mingw32-libunwind >= 22.1.8
 
-BuildRequires:  mingw64-filesystem
-BuildRequires:  mingw64-gcc
+BuildRequires:  mingw64-filesystem >= 152-1.9
+BuildRequires:  mingw64-clang
+BuildRequires:  mingw64-binutils
+BuildRequires:  mingw64-headers
+BuildRequires:  mingw64-crt
+BuildRequires:  mingw64-compiler-rt >= 22.1.8
+BuildRequires:  mingw64-libunwind >= 22.1.8
+# llvm-windres, standing in for GNU windres on the clang columns (GNU windres
+# preprocesses by invoking <triplet>-gcc, which is not installed).
+BuildRequires:  llvm
 
 BuildRequires:  ucrt64-filesystem
 BuildRequires:  ucrt64-gcc
@@ -114,11 +137,33 @@ The ucrtarm64-zlib-static package contains static library for ucrtarm64-zlib dev
 
 
 %build
-# ZLIB_BUILD_TESTING=OFF for ucrtarm64 only: the tests build with -coverage,
-# which links libclang_rt.profile.a, and only the builtins are packaged for
-# this target.  %%check links a real zlib consumer instead.
-MINGW32_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw32_libdir}/pkgconfig \
-MINGW64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{mingw64_libdir}/pkgconfig \
+# ZLIB_BUILD_TESTING=OFF for every clang target: the tests build with
+# -coverage, which links libclang_rt.profile.a, and only the builtins are
+# packaged.  %%check links a real zlib consumer instead.
+#
+# llvm-windres compiles zlib1.rc for the clang targets: GNU windres
+# preprocesses .rc files by invoking <triplet>-gcc, which is not installed.
+# It must reach cmake from a toolchain file: a -DCMAKE_RC_COMPILER on the
+# command line makes cmake discard its cache mid-configure and lose the
+# cross context.  The overlay includes the stock file and overrides only
+# the resource compiler; the later -DCMAKE_TOOLCHAIN_FILE wins.  One-word
+# wrapper scripts carry the --target, as CMAKE_RC_COMPILER takes no flags.
+for t in i686-w64-mingw32 x86_64-w64-mingw32 ; do
+    printf '#!/bin/sh\nexec llvm-windres --target=%%s "$@"\n' $t \
+        > %{_builddir}/$t-windres-clang
+    chmod +x %{_builddir}/$t-windres-clang
+done
+cat > %{_builddir}/toolchain-win32-clang-rc.cmake <<'EOF'
+include(/usr/share/mingw/toolchain-mingw32.cmake)
+SET(CMAKE_RC_COMPILER %{_builddir}/i686-w64-mingw32-windres-clang)
+EOF
+cat > %{_builddir}/toolchain-win64-clang-rc.cmake <<'EOF'
+include(/usr/share/mingw/toolchain-mingw64.cmake)
+SET(CMAKE_RC_COMPILER %{_builddir}/x86_64-w64-mingw32-windres-clang)
+EOF
+
+MINGW32_CMAKE_ARGS="-DINSTALL_PKGCONFIG_DIR=%{mingw32_libdir}/pkgconfig -DCMAKE_TOOLCHAIN_FILE=%{_builddir}/toolchain-win32-clang-rc.cmake -DZLIB_BUILD_TESTING=OFF" \
+MINGW64_CMAKE_ARGS="-DINSTALL_PKGCONFIG_DIR=%{mingw64_libdir}/pkgconfig -DCMAKE_TOOLCHAIN_FILE=%{_builddir}/toolchain-win64-clang-rc.cmake -DZLIB_BUILD_TESTING=OFF" \
 UCRT64_CMAKE_ARGS=-DINSTALL_PKGCONFIG_DIR=%{ucrt64_libdir}/pkgconfig \
 UCRTARM64_CMAKE_ARGS="-DINSTALL_PKGCONFIG_DIR=%{ucrtarm64_libdir}/pkgconfig -DZLIB_BUILD_TESTING=OFF" \
 %mingw_cmake
@@ -259,6 +304,77 @@ ucrtarm64-pkg-config --libs zlib
 ucrtarm64-pkg-config --libs zlib | grep -q -- '-lz'
 unset PKG_CONFIG_LIBDIR
 
+# 6. The win32/win64 DLLs are now linked with the clang supplement drivers,
+#    and the qemu-ga MSI ships them from sysroots where the GNU runtime DLLs
+#    do not exist: no libgcc, libssp or libunwind import may appear.  A zlib
+#    consumer must still link through the same drivers.
+wincheck=%{_builddir}/win-zlib-check
+rm -rf $wincheck
+mkdir -p $wincheck
+cat > $wincheck/t.c <<'EOF'
+#include <string.h>
+#include <zlib.h>
+
+int main (void)
+{
+  static const char msg[] = "the quick brown fox jumps over the lazy dog";
+  unsigned char comp[256];
+  unsigned char plain[256];
+  uLongf clen = sizeof comp;
+  uLongf plen = sizeof plain;
+
+  if (compress2 (comp, &clen, (const Bytef *) msg, sizeof msg, 6) != Z_OK)
+    return 1;
+  if (uncompress (plain, &plen, comp, clen) != Z_OK)
+    return 1;
+  return memcmp (msg, plain, sizeof msg) == 0 ? 0 : 1;
+}
+EOF
+
+for t in i686-w64-mingw32 x86_64-w64-mingw32 ; do
+  case $t in
+    i686-*)
+      wbin_rel=%{mingw32_bindir}
+      wlibdir=%{buildroot}%{mingw32_libdir}
+      wincdir=%{buildroot}%{mingw32_includedir}
+      peformat=pei-i386
+      ;;
+    x86_64-*)
+      wbin_rel=%{mingw64_bindir}
+      wlibdir=%{buildroot}%{mingw64_libdir}
+      wincdir=%{buildroot}%{mingw64_includedir}
+      peformat=pei-x86-64
+      ;;
+  esac
+  wbindir=%{buildroot}$wbin_rel
+
+  # PE format, split debuginfo, and no GNU runtime or unwinder imports.
+  # Capture first: under "if" a crashed objdump counts as pattern-absent.
+  $t-objdump -f $wbindir/zlib1.dll | grep -q "file format $peformat"
+  $t-objdump -h $wbindir/zlib1.dll | grep -q '\.gnu_debuglink'
+  test -f %{buildroot}%{_prefix}/lib/debug$wbin_rel/zlib1.dll.debug
+  imports=$($t-objdump -p $wbindir/zlib1.dll | grep 'DLL Name' || :)
+  echo "$t zlib1.dll imports: $imports"
+  if echo "$imports" | grep -qiE 'libgcc|libssp|libunwind'; then
+    echo "ERROR: $t zlib1.dll imports a GNU runtime or unwinder DLL" >&2
+    exit 1
+  fi
+
+  # Shared and static links through the supplement drivers.
+  $t-clang -isystem $wincdir $wincheck/t.c -L$wlibdir -lz -o $wincheck/t-$t.exe
+  $t-objdump -f $wincheck/t-$t.exe | grep -q "file format $peformat"
+  $t-objdump -p $wincheck/t-$t.exe | grep -i 'zlib1.dll'
+
+  $t-clang -isystem $wincdir $wincheck/t.c -L$wlibdir \
+      -Wl,-Bstatic -lz -Wl,-Bdynamic -o $wincheck/t-static-$t.exe
+  imports=$($t-objdump -p $wincheck/t-static-$t.exe)
+  if echo "$imports" | grep -qi 'zlib1.dll'; then
+    echo "ERROR: the $t static link imports zlib1.dll" >&2
+    exit 1
+  fi
+done
+rm -rf "$wincheck"
+
 
 # Win32
 %files -n mingw32-zlib
@@ -310,6 +426,13 @@ unset PKG_CONFIG_LIBDIR
 
 
 %changelog
+* Mon Aug 24 2026 Erik Berg <fedora@slipsprogrammor.no> - 1.3.2-1.2
+- Build the win32 and win64 targets with the clang supplement drivers:
+  the qemu-ga MSI ships DLLs from clang/compiler-rt toolchain sysroots,
+  where the GNU runtime DLLs do not exist
+- New checks assert the x86 DLLs import no libgcc, libssp or libunwind,
+  and link a zlib consumer through the same drivers
+
 * Thu Aug 06 2026 Erik Berg <fedora@slipsprogrammor.no> - 1.3.2-1.1
 - Add zlib for the Windows on ARM64 target
 
